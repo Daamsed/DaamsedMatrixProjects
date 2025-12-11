@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.pyc
+
+# Images (don't add large generated image folders)
+output_img/
+input_img/
+
+# VSCode
+.vscode/
+*.code-workspace
+
+# Arduino/build artifacts
+*.hex
+*.elf
+*.bin
+*.eep
+*.map
+build/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Other
+.env
