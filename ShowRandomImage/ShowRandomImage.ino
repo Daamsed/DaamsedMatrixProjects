@@ -110,12 +110,31 @@ WiFiClientSecure client;
 // PNG draw callback
 int PNGDraw(PNGDRAW *pDraw)
 {
-  // Stop further decoding as image is running off bottom of screen
-  if (pDraw->y >= dma_display->height()) return 0;
+  // Only process up to 64 pixels per line
+  int w = pDraw->iWidth;
+  if (w > 64) w = 64;
+  static uint16_t lineBuf[64];
+  uint8_t *src = pDraw->pPixels;
 
-  dma_display->drawRGBBitmap(pDraw->x, pDraw->y, pDraw->pPixels, pDraw->iWidth, pDraw->iHeight);
+  // Option 1: Use PNGdec's built-in conversion
+  png.getLineAsRGB565(pDraw, lineBuf, PNG_RGB565_LITTLE_ENDIAN, 0x0000);
 
-  return 1; // continue decoding
+  // Option 2: Manual conversion (with optional gamma correction)
+  // for (int i = 0; i < w; i++) {
+  //   uint8_t r = src[i*3];
+  //   uint8_t g = src[i*3+1];
+  //   uint8_t b = src[i*3+2];
+  //   // Apply gamma correction if needed
+  //   lineBuf[i] = ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3);
+  // }
+
+  // Center image horizontally
+  int xOffset = (dma_display->width() - w) / 2;
+  if (xOffset < 0) xOffset = 0;
+
+  dma_display->drawRGBBitmap(xOffset, pDraw->y, lineBuf, w, 1);
+
+  return 1;
 }
 
 void displaySetup() {
@@ -213,11 +232,11 @@ void * myOpen(const char *filename, int32_t *size) {
 void myClose(void *handle) {
   if (myfile) myfile.close();
 }
-int32_t myRead(void *handle, uint8_t *buffer, int32_t length) {
+int32_t myRead(PNGFILE *handle, uint8_t *buffer, int32_t length) {
   if (!myfile) return 0;
   return myfile.read(buffer, length);
 }
-int32_t mySeek(void *handle, int32_t position) {
+int32_t mySeek(PNGFILE *handle, int32_t position) {
   if (!myfile) return 0;
   return myfile.seek(position);
 }
@@ -410,11 +429,13 @@ void drawImageFile(char *imageFileUri) {
   if (header[0] == 0x89 && header[1] == 0x50 && header[2] == 0x4E && header[3] == 0x47) {
     Serial.println("Detected PNG - using PNGdec");
     // Use PNGdec to decode from SPIFFS
-    if (png.open(imageFileUri, PNGDraw) == PNG_OK) {
+    int status = png.open(imageFileUri, myOpen, myClose, myRead, mySeek, PNGDraw);
+    if (status == 0) { // PNG_SUCCESS is 0
       png.decode(NULL, 0);
       png.close();
     } else {
-      Serial.println("PNG open failed");
+      Serial.print("PNG open failed, status: ");
+      Serial.println(status);
     }
   } else {
     Serial.println("Unsupported image format - not PNG. Skipping draw.");

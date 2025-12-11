@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
-resize_jpg.py
+resize_png.py
 
-Pad an image equally on both axes to make it square, then resize to a target size and save as JPG.
+Pad an image equally on both axes to make it square, then resize to a target size and save as png.
 Uses block-based downsampling: each block is reduced to its most common color.
 
 Usage:
-  python resize_jpg.py input.jpg output.jpg --size 64
+  python resize_png.py input.png output.png --size 64
 """
 import argparse
 import os
@@ -218,7 +218,7 @@ def pad_to_square_and_resize(in_path, size=64, n_colors=None):
     img = block_based_resize(img, size)
 
 
-    img.save('images/output_img/'+in_path, 'jpg')
+    img.save('images/output_img/'+in_path, 'png')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Pad an image, optionally cluster colors, and resize using block-based method')
