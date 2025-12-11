@@ -3,8 +3,6 @@ __pycache__/
 *.pyc
 
 # Images (don't add large generated image folders)
-output_img/
-input_img/
 
 # VSCode
 .vscode/
